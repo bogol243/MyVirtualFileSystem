@@ -6,6 +6,8 @@
 #include <array>
 #include <sstream>
 #include <string_view>
+
+#include <cassert>
 //
 //#include <unordered_map>
 //
@@ -521,6 +523,18 @@ public:
 
 	void Clear() {
 		std::fstream ilist_stream(_filename, std::ios::out | std::ios::binary | std::ios::trunc);
+	}
+
+	/*
+	* Возвращает INode* на свободную inode.
+	* Если такой нет, возвращает nullptr;
+	*/
+	std::pair<INode*,size_t> GetFreeINode() {
+		for (size_t inode_id = 0; inode_id < _size; ++inode_id) {
+			INode* inode = ReadINode(inode_id);
+			if (inode && inode->FILETYPE == 0) return { inode, inode_id};
+		}
+		return { nullptr,0 };
 	}
 
 	friend std::ostream& operator<<(std::ostream& out, IList& ilist);
