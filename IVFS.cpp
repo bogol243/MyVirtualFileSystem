@@ -619,25 +619,30 @@ public:
 	size_t Write(File* fd, const char* data, size_t data_len) {
 		std::ofstream data_storage_stream(_filename, ios::in | ios::binary);
 		auto& data_blocks = fd->inode_obj.data_blocks;
-		size_t blocks_count = 0;
+		size_t blocks_count = fd->inode_obj.blocks_count;
 
-		size_t current_block = 0;
+		size_t current_block = data_blocks[fd->ppos / _block_size];
 		size_t write_count = 0;
 
-		for (size_t i = 0; i < data_len; ++i) {
-			if (i % _block_size) { // дошли до конца выданного блока
+		data_storage_stream.seekp(current_block * _block_size + (fd->ppos % _block_size));
+
+		for (size_t i = fd->ppos; i < fd->ppos + data_len; ++i) {
+			if (i % _block_size == 0) { // дошли до конца выданного блока
 				current_block = GetFreeBlock();
-				data_blocks[blocks_count] = current_block;
-				fd->inode_obj.blocks_count++;
+				data_blocks[fd->inode_obj.blocks_count++] = current_block;
 				// смещаемся на (номер блока)*(размер блока)
 				data_storage_stream.seekp(current_block * _block_size);
 			}
-			data_storage_stream.put(data[i]);
-			write_count++;
+			//data_storage_stream.seekp(current_block * _block_size + i % _block_size);
+			data_storage_stream.put(data[write_count++]);
+			data_storage_stream.flush();
 		}
 
 		//sync INode state (rewrite old)
+		fd->inode_obj.byte_size += write_count;
 		ilist.WriteINode(fd->inode_id, fd->inode_obj);
+		
+		data_storage_stream.flush();
 		return write_count;
 	}
 
