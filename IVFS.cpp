@@ -650,19 +650,22 @@ public:
 		std::ifstream data_storage_stream(_filename, ios::binary);
 		auto& data_blocks = fd->inode_obj.data_blocks;
 
-		size_t current_block = 0;
+		
 		size_t read_count = 0;
-		size_t block_number = 0;
 
-		for (size_t i = 0; i < buf_len && i < fd->inode_obj.byte_size; ++i) {
-			if (i % _block_size) { 
-				current_block = data_blocks[block_number++];
+		size_t block_number = fd->gpos / _block_size;
+		size_t current_block = data_blocks[block_number];
 
+		data_storage_stream.seekg(current_block * _block_size + (fd->gpos % _block_size));
+
+		for (size_t i = fd->gpos; i < buf_len && i < fd->inode_obj.byte_size; ++i) {
+			if (i % _block_size == 0) {
+				block_number = i / _block_size;
+				current_block = data_blocks[block_number];
 				// смещаемся на (номер блока)*(размер блока)
 				data_storage_stream.seekg(current_block * _block_size);
 			}
-			data_storage_stream.get(buf[i]);
-			read_count++;
+			data_storage_stream.get(buf[read_count++]);
 		}
 
 		return read_count;
