@@ -579,7 +579,15 @@ public:
 	*/
 	DataStorage(std::string filename, size_t block_size, bool reinitialize = true)
 		: _filename(filename)
-		, _block_size(block_size) {}
+		, _block_size(block_size) {
+		if (reinitialize) {
+			Clear();
+		}
+	}
+
+	void Clear() {
+		std::fstream data_storage_stream(_filename, std::ios::out | std::ios::binary | std::ios::trunc);
+	}
 
 	size_t GetFreeBlock() {
 		return _end_block++;
