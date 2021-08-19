@@ -669,6 +669,123 @@ public:
 	}
 };
 
+
+// Подсистема директорий и трансляции имён. 
+// Не привязана ни к какому файлу на диске. Данные директорий храняться в vfs как файлы.
+
+/*
+* Представляет запись в директории
+*/
+struct DirRecord {
+	size_t inode_id;
+	char name[16];
+};
+
+class Directory {
+	File* _fd;  // тут лежат данные директории
+public:
+	/*
+	* File* fd -- файловый дескриптор файла директории
+	*/
+	Directory(File* fd)
+		: _fd(fd) {
+
+	}
+};
+
+//class Directories {
+//public:
+//	
+//	/*
+//	* Создание корневой директории
+//	*/
+//	void CreateRoot() {
+//
+//	}
+//};
+
+void test_data_storage_smoke() {
+	DataStorage ds("datastorage.txt", 32);
+	File* test_f = new File;
+	auto node_and_id = ilist.GetFreeINode();
+	auto new_node_ptr = node_and_id.first;
+	auto new_node_id = node_and_id.second;
+
+	if (new_node_ptr) {
+		test_f->inode_obj = *new_node_ptr;
+		test_f->inode_id = new_node_id;
+	}
+	
+	std::string test_data = "heres some test data to write into data_storage";
+	ds.Write(test_f, test_data.c_str(), test_data.size());
+
+	char buffer[60];
+	auto bytes_read = ds.Read(test_f, buffer, 60);
+
+	std::string res(buffer,bytes_read);
+	
+	assert(test_data == res);
+	std::cout << "res: " << res << '\n';
+	std::cout << ilist;
+}
+
+void test_random_access_read() {
+	DataStorage ds("datastorage.txt", 32);
+	File* test_f = new File;
+	auto node_and_id = ilist.GetFreeINode();
+	auto new_node_ptr = node_and_id.first;
+	auto new_node_id = node_and_id.second;
+
+	if (new_node_ptr) {
+		test_f->inode_obj = *new_node_ptr;
+		test_f->inode_id = new_node_id;
+	}
+
+	std::string test_data = "heres some test data to write into data_storage";
+	ds.Write(test_f, test_data.c_str(), test_data.size());
+
+	test_data = test_data.substr(40);
+	char buffer[60];
+
+	ds.Seekg(test_f, 40);
+	auto bytes_read = ds.Read(test_f, buffer, 60);
+
+	std::string res(buffer, bytes_read);
+
+	assert(test_data == res);
+	std::cout << "res: " << res << '\n';
+	std::cout << ilist;
+}
+
+void test_append() {
+	DataStorage ds("datastorage.txt", 32);
+	File* test_f = new File;
+	auto node_and_id = ilist.GetFreeINode();
+	auto new_node_ptr = node_and_id.first;
+	auto new_node_id = node_and_id.second;
+
+	if (new_node_ptr) {
+		test_f->inode_obj = *new_node_ptr;
+		test_f->inode_id = new_node_id;
+	}
+
+	std::string test_data = "heres some test data to write into data_storage";
+	ds.Write(test_f, test_data.c_str(), test_data.size());
+
+	std::string appendix = " ,bitchass nigga";
+	ds.Append(test_f, appendix.c_str(), appendix.size());
+
+	test_data = test_data + appendix;
+	char buffer[100];
+	auto bytes_read = ds.Read(test_f, buffer, 100);
+
+	std::string res(buffer, bytes_read);
+
+	assert(test_data == res);
+	std::cout << "res: " << res << '\n';
+	std::cout << ilist;
+}
+
 void test_ilist() {
 	IList ilist("ilist.txt", 10, true);
 	std::cout << ilist;
