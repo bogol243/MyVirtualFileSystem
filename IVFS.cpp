@@ -545,7 +545,7 @@ std::ostream& operator<<(std::ostream& out, const INode& inode) {
 		<< "byte_size: " << inode.byte_size << " | "
 		<< "blocks_count: " << inode.blocks_count << " | "
 		<< "blocks: ";
-	for (size_t block_id = 0; block_id < N_BLOCKS; block_id++) {
+	for (size_t block_id = 0; block_id < N_BLOCKS; ++block_id) {
 		out << inode.data_blocks[block_id] << ' ';
 	}
 	return out;
@@ -562,7 +562,7 @@ std::ostream& operator<<(std::ostream& out, IList& ilist) {
 
 
 // управлятор ilist-a
-IList ilist("ilist.txt", 10, false);
+IList ilist("ilist.txt", 10, true);
 
 // Подсистема DataStorage
 class DataStorage {
@@ -570,7 +570,7 @@ class DataStorage {
 
 	std::string _filename;
 	size_t _block_size;
-	size_t _end_block = 0;
+	size_t _end_block = 1;
 public:
 	DataStorage(std::string filename, size_t block_size)
 		: _filename(filename)
