@@ -791,10 +791,14 @@ void test_append() {
 
 void test_ilist() {
 	IList ilist("ilist.txt", 10, true);
+
+
 	std::cout << ilist;
 }
 
 int main() {
-	test_ilist();
+	//test_data_storage_smoke();
+	//test_random_access_read();
+	test_append();
 	return 0;
 }
