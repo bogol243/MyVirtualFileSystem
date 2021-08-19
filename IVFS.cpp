@@ -549,52 +549,6 @@ void test_ilist() {
 	std::cout << ilist;
 }
 
-void test_write() {
-	std::string _filename = "testfile.txt";
-	{
-		std::ofstream _ilist_stream(_filename, std::ios::ate | std::ios::binary);
-		// сдвигаем указатель на нужный inode
-		
-		_ilist_stream.seekp(0);
-		// пишем объект inode в файл
-		size_t t1 = 9;
-		_ilist_stream.write(reinterpret_cast<char*>(&t1), sizeof(size_t));
-		_ilist_stream.flush();
-		_ilist_stream.close();
-	}
-
-	{
-		std::ofstream _ilist_stream(_filename, std::ios::in | std::ios::binary);
-		// сдвигаем указатель на нужный inode
-
-		_ilist_stream.seekp(0);
-		// пишем объект inode в файл
-		size_t t1 = 8;
-		_ilist_stream.write(reinterpret_cast<char*>(&t1), sizeof(size_t));
-		_ilist_stream.flush();
-	}
-	{
-		std::ofstream _ilist_stream(_filename, std::ios::in | std::ios::binary);
-		// сдвигаем указатель на нужный inode
-
-		_ilist_stream.seekp(sizeof(size_t)*1);
-		// пишем объект inode в файл
-		size_t t1 = 7;
-		_ilist_stream.write(reinterpret_cast<char*>(&t1), sizeof(size_t));
-		_ilist_stream.flush();
-	}
-	{
-		std::ofstream _ilist_stream(_filename, std::ios::ate | std::ios::binary);
-		// сдвигаем указатель на нужный inode
-
-		_ilist_stream.seekp(sizeof(size_t) * 1);
-		// пишем объект inode в файл
-		size_t t1 = 6;
-		_ilist_stream.write(reinterpret_cast<char*>(&t1), sizeof(size_t));
-		_ilist_stream.flush();
-	}
-}
-
 int main() {
 	test_ilist();
 	return 0;
