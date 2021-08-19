@@ -572,7 +572,12 @@ class DataStorage {
 	size_t _block_size;
 	size_t _end_block = 1;
 public:
-	DataStorage(std::string filename, size_t block_size)
+
+	/*
+	* std::string filename	-- имя файла-хранилища области данных на диске
+	* size_t block_size		-- размер блока данных (в байтах)
+	*/
+	DataStorage(std::string filename, size_t block_size, bool reinitialize = true)
 		: _filename(filename)
 		, _block_size(block_size) {}
 
