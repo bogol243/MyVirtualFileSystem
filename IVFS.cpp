@@ -418,17 +418,17 @@
 //	return nullptr;
 //}
 
+// Общие константы
 const size_t N_BLOCKS = 10;
-#pragma pack(push,4)
+
+// Общие структуры
 struct INode {
 	size_t FILETYPE = 0; // 0 -- пустой inode, 1 --файл , 2 -- каталог
 	//size_t ref_count; // количество имён
 	size_t byte_size = 0;
-	//size_t data_blocks[N_BLOCKS] = { 0 };
-	size_t n_blocks = N_BLOCKS;
+	size_t blocks_count = 0;
 	std::array<size_t, N_BLOCKS> data_blocks = { 0 };
 };
-#pragma pack(pop)
 
 struct File {
 	size_t inode_id = 0;
@@ -437,35 +437,37 @@ struct File {
 	INode inode_obj;
 };
 
-
-//редактирование и просмотр ilist
+// Подсистема ilist
+// 
+// класс для работы со списком inode -- ilist
 class IList {
 	std::string _filename;
 	size_t _size;
-	std::fstream _ilist_stream;
 public:
-
-
-
-	IList(std::string filename, size_t size, bool clear_file = true)
+	/*
+		* std::string filename	-- имя файла-хранилища ilist на диске
+		* size_t size			-- размер ilist
+		* bool reinitialize		-- флаг обнуления существующего файла
+	*/
+	IList(std::string filename, size_t size, bool reinitialize = true)
 		: _filename(filename)
 		, _size(size)
-		//, _ilist_stream(_filename, std::ios::in | std::ios::out)
 	{
-		if (clear_file) {
+		if (reinitialize){
 			Clear();
-		}
-		
-		for (size_t id = 0; id < _size; ++id) {
-			INode empty_node;
-			empty_node.FILETYPE = id;
-			WriteINode(id,empty_node);
+
+			for (size_t id = 0; id < _size; ++id) {
+				INode empty_node;
+				WriteINode(id, empty_node);
+			}
 		}
 	}
 
+	/* Получить дескриптор файла по его inode id
+		* size_t inode_id -- 
+	*/
 	File* GetFile(size_t inode_id) {
 		File* fd = new File;
-		
 		
 		// прочитать нужный INode
 		INode* inode_obj = ReadINode(inode_id);
@@ -478,7 +480,10 @@ public:
 		
 		return fd;
 	}
-
+	
+	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
+		* size_t inode_id --
+	*/
 	INode* ReadINode(size_t inode_id) {
 		// открыть файл
 		std::ifstream _ilist_stream(_filename, std::ios::binary);
@@ -496,6 +501,10 @@ public:
 		return inode_obj;
 	}
 
+	/* Записать новое значение inode для заданного inode_id
+		* size_t inode_id --
+		* INode inode_obj --
+	*/
 	bool WriteINode(size_t inode_id, INode inode_obj) {
 		std::ofstream _ilist_stream(_filename, std::ios::in | std::ios::binary);
 
@@ -520,7 +529,7 @@ public:
 std::ostream& operator<<(std::ostream& out, const INode& inode) {
 	out << "type: " << inode.FILETYPE << " | "
 		<< "byte_size: " << inode.byte_size << " | "
-		<< "n_blocks: " << inode.n_blocks << " | "
+		<< "blocks_count: " << inode.blocks_count << " | "
 		<< "blocks: ";
 	for (size_t block_id = 0; block_id < N_BLOCKS; block_id++) {
 		out << inode.data_blocks[block_id] << ' ';
@@ -538,14 +547,75 @@ std::ostream& operator<<(std::ostream& out, IList& ilist) {
 }
 
 
+// управлятор ilist-a
+IList ilist("ilist.txt", 10, false);
+
+// Подсистема DataStorage
+class DataStorage {
+	using ios = std::ios;
+
+	std::string _filename;
+	size_t _block_size;
+	size_t _end_block = 0;
+public:
+	DataStorage(std::string filename, size_t block_size)
+		: _filename(filename)
+		, _block_size(block_size) {}
+
+	size_t GetFreeBlock() {
+		return _end_block++;
+	}
+
+	size_t Write(File* fd, const char* data, size_t data_len) {
+		std::ofstream data_storage_stream(_filename, ios::in | ios::binary);
+		auto& data_blocks = fd->inode_obj.data_blocks;
+		size_t blocks_count = 0;
+
+		size_t current_block = 0;
+		size_t write_count = 0;
+
+		for (size_t i = 0; i < data_len; ++i) {
+			if (i % _block_size) { // дошли до конца выданного блока
+				current_block = GetFreeBlock();
+				data_blocks[blocks_count] = current_block;
+				fd->inode_obj.blocks_count++;
+				// смещаемся на (номер блока)*(размер блока)
+				data_storage_stream.seekp(current_block * _block_size);
+			}
+			data_storage_stream.put(data[i]);
+			write_count++;
+		}
+
+		//sync INode state (rewrite old)
+		ilist.WriteINode(fd->inode_id, fd->inode_obj);
+		return write_count;
+	}
+
+	size_t Read	(File* fd, char* buf, size_t buf_len) {
+		std::ifstream data_storage_stream(_filename, ios::binary);
+		auto& data_blocks = fd->inode_obj.data_blocks;
+
+		size_t current_block = 0;
+		size_t read_count = 0;
+		size_t block_number = 0;
+
+		for (size_t i = 0; i < buf_len && i < fd->inode_obj.byte_size; ++i) {
+			if (i % _block_size) { 
+				current_block = data_blocks[block_number++];
+
+				// смещаемся на (номер блока)*(размер блока)
+				data_storage_stream.seekg(current_block * _block_size);
+			}
+			data_storage_stream.get(buf[i]);
+			read_count++;
+		}
+
+		return read_count;
+	}
+};
 
 void test_ilist() {
-	IList ilist("ilist.txt", 10);
-	INode some_node;
-	some_node.byte_size = 100;
-	some_node.FILETYPE = 2;
-	some_node.data_blocks = { 3,4,5,7,6,8,9,1,2,4 };
-	ilist.WriteINode(0, some_node);
+	IList ilist("ilist.txt", 10, true);
 	std::cout << ilist;
 }
 
