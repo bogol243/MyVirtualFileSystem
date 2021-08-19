@@ -593,6 +593,29 @@ public:
 		return _end_block++;
 	}
 
+	void Seekg(File* fd, size_t offset) {
+		fd->gpos = offset;
+	}
+
+	void Seekp(File* fd, size_t offset) {
+		fd->ppos = offset;
+	}
+
+	void SeekgEnd(File* fd) {
+		fd->gpos = fd->inode_obj.byte_size;
+	}
+
+	void SeekpEnd(File* fd) {
+		fd->ppos = fd->inode_obj.byte_size;
+	}
+
+	size_t Append(File* fd, const char* data, size_t data_len) {
+		SeekpEnd(fd);
+		size_t bytes_written = Write(fd, data, data_len);
+		Seekp(fd, 0);
+		return bytes_written;
+	}
+
 	size_t Write(File* fd, const char* data, size_t data_len) {
 		std::ofstream data_storage_stream(_filename, ios::in | ios::binary);
 		auto& data_blocks = fd->inode_obj.data_blocks;
