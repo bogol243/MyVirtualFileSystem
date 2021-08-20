@@ -385,7 +385,7 @@ public:
 
 		data_storage_stream.seekg(current_block * _block_size + (fd->gpos % _block_size));
 
-		for (size_t i = fd->gpos; i < buf_len && i < fd->inode_obj.byte_size; ++i) {
+		for (size_t i = fd->gpos; read_count < buf_len && i < fd->inode_obj.byte_size; ++i) {
 			if (i % _block_size == 0) {
 				block_number = i / _block_size;
 				current_block = data_blocks[block_number];
@@ -394,11 +394,12 @@ public:
 			}
 			data_storage_stream.get(buf[read_count++]);
 		}
-
+		fd->gpos += read_count;
 		return read_count;
 	}
 };
 
+DataStorage ds("datastorage.txt", 32);
 
 // Подсистема директорий и трансляции имён. 
 // Не привязана ни к какому файлу на диске. Данные директорий храняться в vfs как файлы.
