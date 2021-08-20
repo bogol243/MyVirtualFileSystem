@@ -366,13 +366,14 @@ public:
 
 		//sync INode state (rewrite old)
 		fd->inode_obj.byte_size += write_count;
+		fd->ppos += write_count;
 		ilist.WriteINode(fd->inode_id, fd->inode_obj);
 		
 		data_storage_stream.flush();
 		return write_count;
 	}
 
-	size_t Read	(File* fd, char* buf, size_t buf_len) {
+	size_t Read(File* fd, char* buf, size_t buf_len) {
 		std::ifstream data_storage_stream(_filename, ios::binary);
 		auto& data_blocks = fd->inode_obj.data_blocks;
 
