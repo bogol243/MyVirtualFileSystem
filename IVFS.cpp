@@ -9,6 +9,8 @@
 
 #include <cassert>
 #include <cstring>
+
+#include "ilist.h"
 //
 //#include <unordered_map>
 //
@@ -146,146 +148,6 @@
 //		* двойной косвенный блок -- хранит 256 адресов косвенных блоков
 //		* тройной косвенный блок -- хранит 256 адресов двойных косвенных блоков
 //*/
-
-// Общие константы
-const size_t N_BLOCKS = 10;
-
-// Общие структуры
-struct INode {
-	size_t FILETYPE = 0; // 0 -- пустой inode, 1 --файл , 2 -- каталог
-	//size_t ref_count; // количество имён
-	size_t byte_size = 0;
-	size_t blocks_count = 0;
-	std::array<size_t, N_BLOCKS> data_blocks = { 0 };
-};
-
-struct File {
-	size_t inode_id = 0;
-	size_t gpos = 0;		//get pos
-	size_t ppos = 0;		//put pos
-	INode inode_obj;
-};
-
-// Подсистема ilist
-// 
-// класс для работы со списком inode -- ilist
-class IList {
-	std::string _filename;
-	size_t _size;
-public:
-	/*
-		* std::string filename	-- имя файла-хранилища ilist на диске
-		* size_t size			-- размер ilist
-		* bool reinitialize		-- флаг обнуления существующего файла
-	*/
-	IList(std::string filename, size_t size, bool reinitialize = true)
-		: _filename(filename)
-		, _size(size)
-	{
-		if (reinitialize){
-			Clear();
-
-			for (size_t id = 0; id < _size; ++id) {
-				INode empty_node;
-				WriteINode(id, empty_node);
-			}
-		}
-	}
-
-	/* Получить дескриптор файла по его inode id
-		* size_t inode_id -- 
-	*/
-	File* GetFile(size_t inode_id) {
-		File* fd = new File;
-		
-		// прочитать нужный INode
-		INode* inode_obj = ReadINode(inode_id);
-		if (!inode_obj) return nullptr;
-
-		// построить из него файловый дескриптор
-		fd->inode_id = inode_id;
-		fd->inode_obj = *inode_obj;
-		
-		
-		return fd;
-	}
-	
-	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
-		* size_t inode_id --
-	*/
-	INode* ReadINode(size_t inode_id) {
-		// открыть файл
-		std::ifstream _ilist_stream(_filename, std::ios::binary);
-
-		if (inode_id > _size) { // если inode_id больше чем размер ilist
-			return nullptr;
-		}
-
-		// сдвигаем указатель на нужный inode
-		_ilist_stream.seekg(sizeof(INode) * inode_id);
-
-		// читаем в объект inode
-		INode* inode_obj = new INode;
-		_ilist_stream.read(reinterpret_cast<char*>(inode_obj), sizeof(INode));
-		return inode_obj;
-	}
-
-	/* Записать новое значение inode для заданного inode_id
-		* size_t inode_id --
-		* INode inode_obj --
-	*/
-	bool WriteINode(size_t inode_id, INode inode_obj) {
-		std::ofstream _ilist_stream(_filename, std::ios::in | std::ios::binary);
-
-		if (inode_id > _size) { // если inode_id больше чем размер ilist
-			return false;
-		}
-		// сдвигаем указатель на нужный inode
-		_ilist_stream.seekp(sizeof(INode) * inode_id);
-		// пишем объект inode в файл
-		_ilist_stream.write(reinterpret_cast<char*>(&inode_obj), sizeof(INode));
-		_ilist_stream.flush();
-		return true;
-	}
-
-	void Clear() {
-		std::fstream ilist_stream(_filename, std::ios::out | std::ios::binary | std::ios::trunc);
-	}
-
-	/*
-	* Возвращает INode* на свободную inode.
-	* Если такой нет, возвращает nullptr;
-	*/
-	std::pair<INode*,size_t> GetFreeINode() {
-		for (size_t inode_id = 2; inode_id < _size; ++inode_id) {
-			INode* inode = ReadINode(inode_id);
-			if (inode && inode->FILETYPE == 0) return { inode, inode_id};
-		}
-		return { nullptr,0 };
-	}
-
-	friend std::ostream& operator<<(std::ostream& out, IList& ilist);
-};
-
-std::ostream& operator<<(std::ostream& out, const INode& inode) {
-	out << "type: " << inode.FILETYPE << " | "
-		<< "byte_size: " << inode.byte_size << " | "
-		<< "blocks_count: " << inode.blocks_count << " | "
-		<< "blocks: ";
-	for (size_t block_id = 0; block_id < N_BLOCKS; ++block_id) {
-		out << inode.data_blocks[block_id] << ' ';
-	}
-	return out;
-}
-
-std::ostream& operator<<(std::ostream& out, IList& ilist) {
-	for (size_t id = 0; id < ilist._size; ++id) {
-		INode* inode_obj = ilist.ReadINode(id);
-		if (!inode_obj) break;
-		out << *inode_obj << '\n';
-	}
-	return out;
-}
 
 
 // управлятор ilist-a
@@ -436,7 +298,7 @@ public:
 		
 	}
 
-	DirRecord* FindRecord(char name[16]) {
+	DirRecord* FindRecord(const char name[16]) {
 		DirRecord* dir_record = new DirRecord;
 
 		ds.Read(_fd, reinterpret_cast<char*>(dir_record), sizeof(DirRecord));
@@ -448,6 +310,14 @@ public:
 		return nullptr;
 	}
 
+	size_t GetINodeByName(const char name[16]) {
+		if (std::strcmp(name, "/") == 0) return 2; // root handle
+
+		auto record = FindRecord(name);
+		if (!record) return 0;
+		return record->inode_id;
+	}
+
 	friend std::ostream& operator<< (std::ostream& out, Directory dir);
 };
 
@@ -457,7 +327,7 @@ std::ostream& operator<< (std::ostream& out, Directory dir) {
 	while (ds.Read(dir._fd, reinterpret_cast<char*>(&dir_record), sizeof(DirRecord)) > 0) {
 		out << dir_record.name << " -> " << dir_record.inode_id << '\n';
 	}
-
+	ds.Seekg(dir._fd, 0);
 	return out;
 }
 
@@ -481,7 +351,118 @@ File* GetFile(size_t FILETYPE = 1) {
 	return new_file;
 }
 
+File* GetDir() {
+	return GetFile(2);
+}
+
+File* root_fd = GetDir();
+
+std::vector<std::string> SplitPath(const std::string& name) {
+	size_t pos = name.find('/');
+	std::vector<std::string> dirs;
+	while (pos != name.npos) {
+		size_t next_pos = name.find('/', pos + 1);
+		dirs.push_back(name.substr(pos + 1, next_pos - pos - 1));
+		pos = next_pos;
+	}
+	return dirs;
+}
+
+
+size_t TranslateNameToINodeId(std::string name) {
+	std::vector<std::string> dirs = SplitPath(name);
+
+	Directory* dir_ptr = new Directory(root_fd);
+	File* file_fd = nullptr;
+	for (const auto& name_part : dirs) {
+		auto inode_id = dir_ptr->GetINodeByName(name_part.c_str());
+		if (inode_id < 3) /*всё плохо*/ return 0;
+		delete dir_ptr;
+		file_fd = ilist.GetFile(inode_id);
+		if (!file_fd) return 0;
+		dir_ptr = new Directory(file_fd);
+	}
+	return file_fd ? file_fd->inode_id : 0;
+}
+
+File* MkFile(std::string name) {
+	auto path = SplitPath(name);
+	std::string file_name = path.back();
+	path.pop_back();
+
+	Directory* dir_ptr = new Directory(root_fd);
+	File* dir_fd = nullptr;
+
+	// проходим по всем директориям, если они есть идём дальше, если нет, создаём новые
+	for (const auto& name_part : path) {
+		auto inode_id = dir_ptr->GetINodeByName(name_part.c_str());
+		
+		if (inode_id < 3) { // не нашли 
+			dir_fd = GetDir(); // создаём в этой директории файл
+			dir_ptr->AddFile(dir_fd, name_part);	
+		}
+		else {
+			dir_fd = ilist.GetFile(inode_id);
+			if (!dir_fd) return 0;
+		}
+
+		delete dir_ptr;
+		dir_ptr = new Directory(dir_fd);
+	}
+	
+	File* new_file = nullptr;
+	if (dir_ptr) {
+		new_file = GetFile();
+		if (!new_file) return nullptr;
+		dir_ptr->AddFile(new_file,file_name);
+	}
+	
+	return new_file;
+}
+
+
+
 // тесты
+
+
+
+void test_name_translator() {
+	Directory root(root_fd);
+	
+	auto test_fd = GetDir();
+	Directory test(test_fd);
+
+	auto test2_fd = GetDir();
+	Directory test2(test2_fd);
+
+	File* file_fd = GetFile();
+	
+	root.AddFile(test_fd,"test");
+	test.AddFile(test2_fd, "test2");
+	test2.AddFile(file_fd, "file.txt");
+	
+	size_t inode_id = TranslateNameToINodeId("/test/test2/file.txt");
+}
+
+void test_dir_find_record() {
+	File* directory_fd = GetDir();
+	Directory dir(directory_fd);
+
+	File* test_file_fd1 = GetFile();
+	File* test_file_fd2 = GetFile();
+	File* test_file_fd3 = GetFile();
+
+	
+	dir.AddFile(test_file_fd1, "file1");
+
+	dir.AddFile(test_file_fd2, "file2");
+
+	dir.AddFile(test_file_fd3, "file3");
+
+
+	size_t inode_id = dir.GetINodeByName("file1");
+}
+
 
 void test_dir() {
 	File* test_dir_file = GetFile(2);
@@ -603,6 +584,9 @@ void test_ilist() {
 int main() {
 	//test_data_storage_smoke();
 	//test_random_access_read();
-	test_append();
+	//test_append();
+	//test_dir();
+	//test_dir_find_record();
+	test_name_translator();
 	return 0;
 }
