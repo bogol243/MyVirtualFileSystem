@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include <cassert>
+#include <cstring>
 //
 //#include <unordered_map>
 //
