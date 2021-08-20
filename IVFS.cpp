@@ -256,7 +256,7 @@ public:
 	* Если такой нет, возвращает nullptr;
 	*/
 	std::pair<INode*,size_t> GetFreeINode() {
-		for (size_t inode_id = 0; inode_id < _size; ++inode_id) {
+		for (size_t inode_id = 2; inode_id < _size; ++inode_id) {
 			INode* inode = ReadINode(inode_id);
 			if (inode && inode->FILETYPE == 0) return { inode, inode_id};
 		}
