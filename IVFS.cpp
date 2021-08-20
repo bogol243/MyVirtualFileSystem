@@ -451,16 +451,65 @@ public:
 	friend std::ostream& operator<< (std::ostream& out, Directory dir);
 };
 
-//class Directories {
-//public:
-//	
-//	/*
-//	* Создание корневой директории
-//	*/
-//	void CreateRoot() {
-//
-//	}
-//};
+std::ostream& operator<< (std::ostream& out, Directory dir) {
+	DirRecord dir_record;
+	size_t bytes_read = 0;
+	while (ds.Read(dir._fd, reinterpret_cast<char*>(&dir_record), sizeof(DirRecord)) > 0) {
+		out << dir_record.name << " -> " << dir_record.inode_id << '\n';
+	}
+
+	return out;
+}
+
+// Собираем всё вместе
+
+File* GetFile(size_t FILETYPE = 1) {
+	File* new_file = new File;
+	auto node_and_id = ilist.GetFreeINode();
+	auto new_node_ptr = node_and_id.first;
+	auto new_node_id = node_and_id.second;
+	
+	if (!new_node_ptr) return nullptr;
+
+	new_file->inode_obj = *new_node_ptr;
+	new_file->inode_id = new_node_id;
+
+	new_file->inode_obj.FILETYPE = FILETYPE;
+
+	ilist.WriteINode(new_file->inode_id, new_file->inode_obj);
+
+	return new_file;
+}
+
+// тесты
+
+void test_dir() {
+	File* test_dir_file = GetFile(2);
+
+	Directory dir(test_dir_file);
+	
+	File* test_f1 = GetFile();
+	dir.AddFile(test_f1, "file1");
+	std::string t1_str = "test string to test multiple splitted files.";
+	ds.Write(test_f1, t1_str.c_str(), t1_str.size());
+
+	File* test_f2 = GetFile();
+	std::string t2_str = "Some stuff from file2";
+	ds.Write(test_f2, t2_str.c_str(), t2_str.size());
+	dir.AddFile(test_f2, "file2");
+
+	std::string t1_str2 = " Other stuff from file1";
+	ds.Write(test_f1, t1_str2.c_str(), t1_str2.size());
+
+	char buf[200];
+	size_t bytes_read = ds.Read(test_f1, buf, 200);
+	std::string t1_res_str(buf, bytes_read);
+
+	bytes_read = ds.Read(test_f2, buf, 200);
+	std::string t2_res_str(buf, bytes_read);
+
+	std::cout << dir;
+}
 
 void test_data_storage_smoke() {
 	DataStorage ds("datastorage.txt", 32);
