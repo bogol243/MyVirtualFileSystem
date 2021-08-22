@@ -24,7 +24,7 @@ using namespace std;
 		File* fd = new File;
 
 		// прочитать нужный INode
-		INode* inode_obj = ReadINode(inode_id);
+		auto inode_obj = ReadINode(inode_id);
 		if (!inode_obj) return nullptr;
 
 		// построить из него файловый дескриптор
@@ -38,20 +38,20 @@ using namespace std;
 	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
 		* size_t inode_id --
 	*/
-	INode* IList::ReadINode(size_t inode_id) {
+	optional<INode> IList::ReadINode(size_t inode_id) {
 		// открыть файл
 		ifstream _ilist_stream(_filename, ios::binary);
 
 		if (inode_id > _size) { // если inode_id больше чем размер ilist
-			return nullptr;
+			return nullopt;
 		}
 
 		// сдвигаем указатель на нужный inode
 		_ilist_stream.seekg(sizeof(INode) * inode_id);
 
 		// читаем в объект inode
-		INode* inode_obj = new INode;
-		_ilist_stream.read(reinterpret_cast<char*>(inode_obj), sizeof(INode));
+		INode inode_obj;
+		_ilist_stream.read(reinterpret_cast<char*>(&inode_obj), sizeof(INode));
 		return inode_obj;
 	}
 
@@ -83,7 +83,7 @@ using namespace std;
 	*/
 	size_t /*pair<INode*, size_t>*/ IList::GetFreeINode() {
 		for (size_t inode_id = 2; inode_id < _size; ++inode_id) {
-			INode* inode = ReadINode(inode_id);
+			auto inode = ReadINode(inode_id);
 			if (inode && inode->FILETYPE == 0) return inode_id;
 		}
 		return 0;
@@ -102,7 +102,7 @@ ostream& operator<<(ostream& out, const INode& inode) {
 
 ostream& operator<<(ostream& out, IList& ilist) {
 	for (size_t id = 0; id < ilist._size; ++id) {
-		INode* inode_obj = ilist.ReadINode(id);
+		auto inode_obj = ilist.ReadINode(id);
 		if (!inode_obj) break;
 		out << *inode_obj << '\n';
 	}

@@ -2,7 +2,6 @@
 #include "common_structures.h"
 #include "ilist.h"
 #include "data_storage.h"
-#include "directory.h"
 
 #include <vector>
 #include <unordered_map>
@@ -25,7 +24,7 @@ public:
 
 	void AddFileToDir(File* file_fd, File* dir_fd, std::string filename);
 	
-	DirRecord* FindRecordInDir(File* dir_fd, const char name[16]);
+	std::optional<DirRecord> FindRecordInDir(File* dir_fd, const char name[16]);
 
 	File* GetFileByNameInDir(File* dir_fd, const char name[16]);
 
@@ -41,6 +40,6 @@ public:
 
 	void PrintTree(std::ostream& cout = std::cout);
 
-	DirRecord* GetNextRecord(File* dir_fd);
+	std::optional<DirRecord> GetNextRecord(File* dir_fd);
 
 };

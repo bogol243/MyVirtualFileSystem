@@ -29,7 +29,7 @@ size_t MYVFS::Read(File* fd, char* buf, size_t buf_len) {
 File* MYVFS::CreateNewFile(size_t FILETYPE) {
 	File* new_file = new File;
 	auto inode_id = _ilist.GetFreeINode();
-	INode* inode = _ilist.ReadINode(inode_id);
+	auto inode = _ilist.ReadINode(inode_id);
 
 	if (!inode) return nullptr;
 
@@ -42,7 +42,7 @@ File* MYVFS::CreateNewFile(size_t FILETYPE) {
 	//new_file->inode_obj.FILETYPE = FILETYPE;
 
 	_ilist.WriteINode(new_file->inode_id, *inode);
-	INode* inode2 = _ilist.ReadINode(new_file->inode_id);
+	auto inode2 = _ilist.ReadINode(new_file->inode_id);
 
 	return new_file;
 }
@@ -79,44 +79,28 @@ void MYVFS::AddFileToDir(File* file_fd, File* dir_fd, std::string filename) {
 	Write(dir_fd, reinterpret_cast<char*>(&new_record), sizeof(DirRecord));
 }
 
-// TODO OPTIONAL
-DirRecord* MYVFS::GetNextRecord(File* dir_fd) {
+
+std::optional<DirRecord> MYVFS::GetNextRecord(File* dir_fd) {
 	
-	DirRecord* dir_record = new DirRecord;
-	if (_ds.Read(dir_fd, reinterpret_cast<char*>(dir_record), sizeof(DirRecord)) > 0) {
+	DirRecord dir_record;
+	if (_ds.Read(dir_fd, reinterpret_cast<char*>(&dir_record), sizeof(DirRecord)) > 0) {
 		return dir_record;
 	}
 	else {
-		return nullptr;
+		return std::nullopt;
 	}
 }
 
-DirRecord* MYVFS::FindRecordInDir(File* dir_fd, const char name[16]) {
-	DirRecord* dir_record;
+std::optional<DirRecord> MYVFS::FindRecordInDir(File* dir_fd, const char name[16]) {
 	_ds.Seekg(dir_fd, 0);
-	while (dir_record = GetNextRecord(dir_fd)) {
+	while (auto dir_record = GetNextRecord(dir_fd)) {
 		if (std::strcmp(dir_record->name, name) == 0) {
 			return dir_record;
 		}
 	}
-
-	return nullptr;
+	return std::nullopt;
 }
 
-// TODO OPTIONAL
-//DirRecord* MYVFS::FindRecordInDir(File* dir_fd, const char name[16]) {
-//	DirRecord* dir_record = new DirRecord;
-//
-//	while (_ds.Read(dir_fd, reinterpret_cast<char*>(&dir_record), sizeof(DirRecord)) > 0) {
-//		if (std::strcmp(dir_record->name, name) == 0) {
-//			return dir_record;
-//		}
-//	}
-//
-//	return nullptr;
-//}
-
-// TODO OPTIONAL
 File* MYVFS::GetFileByNameInDir(File* dir_fd, const char name[16]) {
 	if (std::strcmp(name, "/") == 0) return _ilist.GetFile(2); // root handle
 
@@ -179,12 +163,10 @@ void MYVFS::PrintTree(std::ostream& cout) {
 	size_t level = 0;
 	File* cur_dir = root_fd;
 
-	DirRecord* dir_record;
-
 	std::stack<File*> dir_stack;
 	_ds.Seekg(cur_dir, 0);
 	while (true) {
-		dir_record = GetNextRecord(cur_dir);
+		auto dir_record = GetNextRecord(cur_dir);
 
 		if (dir_record) {
 			cout << std::string(level, '\t') << dir_record->name << '\n';

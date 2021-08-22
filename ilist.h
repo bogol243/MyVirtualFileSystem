@@ -28,7 +28,7 @@ public:
 	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
 		* size_t inode_id --
 	*/
-	INode* ReadINode(size_t inode_id);
+	std::optional<INode> ReadINode(size_t inode_id);
 
 	/* Записать новое значение inode для заданного inode_id
 		* size_t inode_id --
