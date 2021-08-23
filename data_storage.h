@@ -30,8 +30,14 @@ public:
 	*/
 	size_t GetFreeBlock();
 
+	/*
+	* ƒописать данные в конец файла независимо от того на что указывал указатель записи
+	*/
 	size_t Append(File* fd, const char* data, size_t data_len);
 
+	/*
+	* «аписать данные в файл, запись будет производитьс€ с текущего положени€ указател€ записи (fd->ppos)
+	*/
 	size_t Write(File* fd, const char* data, size_t data_len);
 
 	size_t Read(File* fd, char* buf, size_t buf_len) const;

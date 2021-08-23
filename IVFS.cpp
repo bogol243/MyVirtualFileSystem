@@ -83,7 +83,10 @@ namespace TestTask{
 
 // тесты
 
-
+// Smoke тест системы
+// 
+// ожидаемое поведение:
+//		файл создаётся, запись возможна, считываются ожидаемые данные
 void test_1() {
 	TestTask::VFS vfs;
 
@@ -100,6 +103,8 @@ void test_1() {
 	assert(strcmp(data, str_res.c_str()) == 0);
 }
 
+// Тест служебной функции распечатывание дерева файловой системы
+//
 void test_dir_tree() {
 	TestTask::VFS vfs;
 
@@ -117,6 +122,12 @@ void test_dir_tree() {
 	assert(expected == result_oss.str());
 }
 
+// открытие root файла (путь "/")
+//
+// ожидаемое поведение: 
+//		вернётся не nullptr
+//		inode_id вернувшегося файла будет 2
+//		тип файла -- директория
 void test_open_root() {
 	TestTask::VFS vfs;
 	auto fd = vfs.Open("/");
@@ -126,6 +137,10 @@ void test_open_root() {
 	assert(fd->inode_obj.FILETYPE = 2); // рут это директория
 }
 
+// Открытие несуществующего файла
+//
+// ожидаемое поведение: 
+//		метод Open вернёт nullptr
 void test_open_absent() {
 	TestTask::VFS vfs;
 	auto fd = vfs.Open("absent_file");
@@ -133,6 +148,10 @@ void test_open_absent() {
 	assert(fd == nullptr);
 }
 
+// Закрытие файла
+//
+// ожидаемое поведение: 
+//		после закрытия запись в файл и чтение из файла становиться невозможным
 void test_close() {
 	TestTask::VFS vfs;
 	auto fd = vfs.Create("file1");
@@ -143,6 +162,10 @@ void test_close() {
 	assert(vfs.Write(fd, " world!", 7) == 0);
 }
 
+// Чтение из файла открытого на чтение
+//
+// ожидаемое поведение: 
+//		Файл успешно считан, считанные данные соответствуют ожидаемым
 void test_open_read() {
 	TestTask::VFS vfs;
 
@@ -165,9 +188,14 @@ void test_open_read() {
 	assert(file1_data == res_string);
 }
 
+// Запись в файл открытый на чтение
+//
+// ожидаемое поведение: 
+//		размер файла не должен измениться
+//		количество записанные байт == 0
+//		данные не должны измениться
 void test_open_write() {
-	// если файл открыт в режиме readonly, запись в него невозможна, функция write будет записывать 0 байт
-	// файл не должен помняться при попытке записи в readonly режиме
+
 	TestTask::VFS vfs;
 
 	auto fd = vfs.Create("file1");
@@ -186,6 +214,9 @@ void test_open_write() {
 	assert(std::strcmp(buf, "some data") == 0); // данные не изменились
 }
 
+// полное считывание одного файла через разные файловые дескрипторы из нескольких потоков
+//
+// ожидаемое поведение: каждый файл должен считаться корректно
 void test_multithreading_read_from_different_fd_single_file() {
 	TestTask::VFS vfs;
 	
@@ -213,6 +244,10 @@ void test_multithreading_read_from_different_fd_single_file() {
 
 }
 
+// считывание частей одного файла через один файловый дескриптор из нескольких потоков
+//
+// ожидаемое поведение: если количество_потоков*размер_части>=размер файла, общее количество считанных байт
+// будет равно размеру файла. Порядок считывания не гарантируется.
 void test_multithreading_read_from_same_fd_single_file() {
 	TestTask::VFS vfs;
 	
@@ -244,6 +279,10 @@ void test_multithreading_read_from_same_fd_single_file() {
 	assert(total_bytes_read == 501);
 }
 
+
+// считывание разных файлов через через разные файловые дескрипторы из нескольких потоков
+//
+// ожидаемое поведение: каждый файл должен считаться корректно
 void test_multithreading_read_from_different_fd_multiple_files() {
 	TestTask::VFS vfs;
 
@@ -285,9 +324,9 @@ void test_multithreading_read_from_different_fd_multiple_files() {
 }
 
 
-// чтение одного файла через один файловый дескриптор из нескольких потоков:
-//	1) если считывается байт больше или равно размеру файла -- файл считывается первым захватившим потоком.
-//	2) если считывается байт меньше чем размер файла -- порядок не гарантируется
+// считывание одного файла полностью через один файловый дескриптор из нескольких потоков
+//
+// ожидаемое поведение: файл считывается первым захватившим потоком.
 void test_multithreading_read_from_same_fd() {
 	
 	
@@ -320,6 +359,76 @@ void test_multithreading_read_from_same_fd() {
 }
 
 
+
+// Запись в разные файлы, через разные файловые дескрипторы в несколько потоков
+//
+// Ожидаемое поведение: будет записано количество байт равное сумме размеров данных со всех потоков
+void test_multithreading_write_to_different_fd_multiple_files() {
+	TestTask::VFS vfs;
+
+	std::vector<std::string> files_data;
+	std::vector<File*> files_fds;
+	const size_t NUM_FILES = 100;
+
+	for (int i = 0; i < NUM_FILES; ++i) {
+		std::string data(100, 'A' + i % 20);
+		files_data.push_back(data);
+
+		auto filename = std::string("file") + std::to_string(i);
+		auto fd = vfs.Create(filename.c_str());
+		files_fds.push_back(fd);
+	}
+
+	std::atomic<size_t> total_bytes_written = 0;
+	auto test_func =
+		[&vfs,&total_bytes_written](std::string data, File* fd) {
+		
+		total_bytes_written += vfs.Write(fd, data.c_str(),data.size());
+	};
+	
+	{
+		std::vector<std::future<void>> futures;
+		for (size_t i = 0; i < NUM_FILES; ++i) {
+			futures.push_back(std::async(test_func, files_data[i], files_fds[i]));
+		}
+	}
+
+	assert(total_bytes_written == NUM_FILES * 100);
+}
+
+// запись в файл через один файловый дескриптор в несколько потоков
+//
+// ожидаемое поведение: будет записано количество байт равное сумме размеров данных со всех потоков,
+// размер получившегося файла будет равен этой сумме. Порядок записи не гарантируется и не проверяется
+void test_multithreading_write_to_same_fd() {
+
+
+	TestTask::VFS vfs;
+
+	
+	auto fd = vfs.Create("file1");
+
+	std::atomic<size_t> total_bytes_written = 0;
+	
+	auto test_func =
+		[&vfs, &fd, &total_bytes_written]() {
+		std::string data(20, 'A');
+
+		total_bytes_written += vfs.Write(fd, data.c_str(), 20);
+	};
+
+	const size_t N = 100;
+	{
+		std::vector<std::future<void>> futures;
+		for (size_t i = 0; i < N; ++i) {
+			futures.push_back(std::async(test_func));
+		}
+	}
+
+	assert(fd->inode_obj.byte_size == N * 20 && total_bytes_written == N * 20);
+}
+
+
 void run_tests() {
 	test_1();
 	test_dir_tree();
@@ -334,11 +443,18 @@ void run_tests() {
 
 void run_multithreading_tests() {
 	test_multithreading_read_from_different_fd_single_file();
+	
 	test_multithreading_read_from_same_fd_single_file();
 
 	test_multithreading_read_from_different_fd_multiple_files();
 
 	test_multithreading_read_from_same_fd();
+
+	test_multithreading_write_to_different_fd_multiple_files();
+
+	test_multithreading_write_to_same_fd();
+
+	
 
 	std::cout << "Multithreading tests OK" << std::endl;
 }
