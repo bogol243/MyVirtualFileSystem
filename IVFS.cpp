@@ -6,7 +6,6 @@
 #include "data_storage.h"
 #include "common_structures.h"
 #include "my_vfs.h"
-#include "tests.h"
 
 #include <future>
 #include <cassert>
