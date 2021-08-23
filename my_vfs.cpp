@@ -1,12 +1,20 @@
 #include "my_vfs.h"
 
 MYVFS::MYVFS() {
-	// Подсистема ilist
 	_ilist = IList("ilist.txt", 100, true);
 	
-	// Подсистема DataStorage
-	_ds = DataStorage("datastorage.txt", 32);
+	_ds = DataStorage("datastorage.txt", 256);
 	
+	root_fd = CreateNewDir(nullptr); // initialize root directory
+}
+
+MYVFS::MYVFS(VFSSettings settings) {
+	_ilist = IList(settings.ilist_filename,
+					settings.ilist_capacity,
+					settings.reinitialize);
+	
+	_ds = DataStorage(settings.datastorage_filename,settings.block_size);
+
 	root_fd = CreateNewDir(nullptr); // initialize root directory
 }
 
@@ -15,6 +23,7 @@ MYVFS::~MYVFS() {
 }
 
 size_t MYVFS::Write(File* fd, const char* data, size_t data_len) {
+	std::lock_guard<std::mutex> write_lock(write_mutex);
 	size_t bytes_written = _ds.Write(fd, data, data_len);
 	
 	_ilist.WriteINode(fd->inode_id, fd->inode_obj); // обновление информации в inode
@@ -22,7 +31,8 @@ size_t MYVFS::Write(File* fd, const char* data, size_t data_len) {
 	return bytes_written;
 }
 
-size_t MYVFS::Read(File* fd, char* buf, size_t buf_len) {
+size_t MYVFS::Read(File* fd, char* buf, size_t buf_len) const{
+	std::lock_guard<std::mutex> read_fd_lock(fd->file_mutex);
 	return _ds.Read(fd, buf, buf_len);
 }
 
@@ -75,7 +85,7 @@ void MYVFS::AddFileToDir(File* file_fd, File* dir_fd, std::string filename) {
 	std::memcpy(new_record.name, filename.c_str(), filename.size() + 1 < 16 ? filename.size() + 1 : 16);
 	
 	//Append
-	_ds.SeekpEnd(dir_fd);
+	SeekpEnd(dir_fd);
 	Write(dir_fd, reinterpret_cast<char*>(&new_record), sizeof(DirRecord));
 }
 
@@ -92,7 +102,7 @@ std::optional<DirRecord> MYVFS::GetNextRecord(File* dir_fd) {
 }
 
 std::optional<DirRecord> MYVFS::FindRecordInDir(File* dir_fd, const char name[16]) {
-	_ds.Seekg(dir_fd, 0);
+	Seekg(dir_fd, 0);
 	while (auto dir_record = GetNextRecord(dir_fd)) {
 		if (std::strcmp(dir_record->name, name) == 0) {
 			return dir_record;
@@ -117,16 +127,24 @@ File* MYVFS::TranslateNameToFd(std::string name) {
 	std::vector<std::string> dirs = SplitPath(name);
 
 	File* file_fd = root_fd;
-
-	for (const auto& name_part : dirs) {
-		file_fd = GetFileByNameInDir(file_fd, name_part.c_str());
-		if (!file_fd) return nullptr;
+	{
+		std::lock_guard<std::mutex> global_lock(global_mutex);
+		for (const auto& name_part : dirs) {
+			file_fd = GetFileByNameInDir(file_fd, name_part.c_str());
+			if (!file_fd) return nullptr;
+		}
 	}
+	
 
 	return file_fd;
 }
 
+
 File* MYVFS::MkFile(std::string name) {
+
+	// метод вызывает методы -- модифицирующие как ilist, так и data storage
+	std::lock_guard<std::mutex> make_file_guard(global_mutex);
+	
 	auto path = SplitPath(name);
 	std::string filename = path.back();
 	path.pop_back();
@@ -164,7 +182,7 @@ void MYVFS::PrintTree(std::ostream& cout) {
 	File* cur_dir = root_fd;
 
 	std::stack<File*> dir_stack;
-	_ds.Seekg(cur_dir, 0);
+	Seekg(cur_dir, 0);
 	while (true) {
 		auto dir_record = GetNextRecord(cur_dir);
 
@@ -188,5 +206,4 @@ void MYVFS::PrintTree(std::ostream& cout) {
 			}
 		}
 	}
-
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <fstream>
 #include "common_structures.h"
+#include "fd_tools.h"
 
 class DataStorage {
 	using ios = std::ios;
@@ -19,22 +20,20 @@ public:
 	*/
 	DataStorage(std::string filename, size_t block_size, bool reinitialize = true);
 
+	/*
+	* Очистить файлы на диске перед инициализацией
+	*/
 	void Clear();
 
+	/*
+	* Получить id следующего свободного блока в области данных
+	*/
 	size_t GetFreeBlock();
-
-	void Seekg(File* fd, size_t offset);
-
-	void Seekp(File* fd, size_t offset);
-
-	void SeekgEnd(File* fd);
-
-	void SeekpEnd(File* fd);
 
 	size_t Append(File* fd, const char* data, size_t data_len);
 
 	size_t Write(File* fd, const char* data, size_t data_len);
 
-	size_t Read(File* fd, char* buf, size_t buf_len);
+	size_t Read(File* fd, char* buf, size_t buf_len) const;
 };
 

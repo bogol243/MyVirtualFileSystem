@@ -23,12 +23,12 @@ public:
 	/* Получить дескриптор файла по его inode id
 		* size_t inode_id --
 	*/
-	File* GetFile(size_t inode_id);
+	File* GetFile(size_t inode_id) const;
 
 	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
 		* size_t inode_id --
 	*/
-	std::optional<INode> ReadINode(size_t inode_id);
+	std::optional<INode> ReadINode(size_t inode_id) const;
 
 	/* Записать новое значение inode для заданного inode_id
 		* size_t inode_id --

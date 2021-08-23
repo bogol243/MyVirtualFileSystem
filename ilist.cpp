@@ -19,8 +19,10 @@ using namespace std;
 		}
 	}
 
-
-	File* IList::GetFile(size_t inode_id) {
+	/*
+	* Получить файл из области данных по идентификатору его inode
+	*/
+	File* IList::GetFile(size_t inode_id) const{
 		File* fd = new File;
 
 		// прочитать нужный INode
@@ -36,9 +38,8 @@ using namespace std;
 	}
 
 	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
-		* size_t inode_id --
 	*/
-	optional<INode> IList::ReadINode(size_t inode_id) {
+	optional<INode> IList::ReadINode(size_t inode_id) const{
 		// открыть файл
 		ifstream _ilist_stream(_filename, ios::binary);
 
@@ -56,8 +57,6 @@ using namespace std;
 	}
 
 	/* Записать новое значение inode для заданного inode_id
-		* size_t inode_id --
-		* INode inode_obj --
 	*/
 	bool IList::WriteINode(size_t inode_id, INode inode_obj) {
 		ofstream _ilist_stream(_filename, ios::in | ios::out | ios::binary);
@@ -78,10 +77,10 @@ using namespace std;
 	}
 
 	/*
-	* Возвращает INode* на свободную inode.
-	* Если такой нет, возвращает nullptr;
+	* Возвращает id свободной inode.
+	* Если такой нет -- возвращает 0
 	*/
-	size_t /*pair<INode*, size_t>*/ IList::GetFreeINode() {
+	size_t IList::GetFreeINode() {
 		for (size_t inode_id = 2; inode_id < _size; ++inode_id) {
 			auto inode = ReadINode(inode_id);
 			if (inode && inode->FILETYPE == 0) return inode_id;
@@ -94,7 +93,7 @@ ostream& operator<<(ostream& out, const INode& inode) {
 		<< "byte_size: " << inode.byte_size << " | "
 		<< "blocks_count: " << inode.blocks_count << " | "
 		<< "blocks: ";
-	for (size_t block_id = 0; block_id < N_BLOCKS; ++block_id) {
+	for (size_t block_id = 0; block_id < N_DATA_BLOCKS; ++block_id) {
 		out << inode.data_blocks[block_id] << ' ';
 	}
 	return out;
