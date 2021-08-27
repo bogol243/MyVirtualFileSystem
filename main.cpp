@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <random>
 
 #include "ilist.h"
 #include "data_storage.h"
@@ -360,26 +361,38 @@ void test_multithreading_write_to_same_fd() {
 }
 
 // TODO
-// юнит тест с многопоточным доступом к VFS.
+// Юнит тест с многопоточным доступом к VFS.
 // В несколько потоков 1000 раз пишутся и читаются файлы, с проверкой что содержимое правильное.
 //
 // ожидаемое поведение: 
 void test_multithreading_read_write() {
 	TestTask::IVFS vfs;
-
-
-	auto fd = vfs.Create("file1");
-
-	std::atomic<size_t> total_bytes_written = 0;
+	
+	std::atomic<size_t> file_number = 0;
+	std::atomic<size_t> fail_count = 0;
 
 	auto test_func =
-		[&vfs, &fd, &total_bytes_written]() {
-		std::string data(20, 'A');
+		[&vfs,&file_number,&fail_count]() {
+		std::string filename = "file" + std::to_string(file_number++);
+		std::string file_data('A' + (file_number % 20), 200);
 
-		total_bytes_written += vfs.Write(fd, data.c_str(), 20);
+		// Создание и запись
+		auto fd = vfs.Create(filename.c_str());
+		vfs.Write(fd, file_data.c_str(), 201);
+		vfs.Close(fd);
+		delete fd;
+
+		// Чтение
+		char buf[201];
+		fd = vfs.Open(filename.c_str());
+		vfs.Read(fd, buf, 201);
+
+		// Проверка данных
+		fail_count += (strcmp(buf, file_data.c_str()) != 0);
 	};
 
-	const size_t N = 100;
+	// параллельный вызов тестирующей функции
+	const size_t N = 1000;
 	{
 		std::vector<std::future<void>> futures;
 		for (size_t i = 0; i < N; ++i) {
@@ -387,7 +400,8 @@ void test_multithreading_read_write() {
 		}
 	}
 
-	assert(fd->inode_obj.byte_size == N * 20 && total_bytes_written == N * 20);
+	// Все данные верны
+	assert(fail_count == 0);
 }
 
 
@@ -416,7 +430,7 @@ void run_multithreading_tests() {
 
 	test_multithreading_write_to_same_fd();
 
-	
+	test_multithreading_read_write();
 
 	std::cout << "Multithreading tests OK" << std::endl;
 }

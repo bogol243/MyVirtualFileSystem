@@ -17,7 +17,7 @@ namespace TestTask {
 
 		// объект виртуальной файловой системы
 		MYVFS fs{ VFSSettings()
-			.SetBlockSize(256)
+			.SetBlockSize(1024)
 			.SetReinitialize(true) };
 
 		// Открыть файл в readonly режиме. Если нет такого файла - вернуть nullptr

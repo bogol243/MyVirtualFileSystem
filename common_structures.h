@@ -10,7 +10,7 @@ struct VFSSettings {
 	size_t block_size = 256;
 	std::string ilist_filename = "ilist.txt";
 	std::string datastorage_filename = "datastorage.txt";
-	size_t ilist_capacity = 1000;
+	size_t ilist_capacity = 2000;
 	bool reinitialize = false;
 	
 	VFSSettings& SetBlockSize(size_t block_size) {
