@@ -30,7 +30,7 @@ size_t MYVFS::Write(File* fd, const char* data, size_t data_len) {
 	return bytes_written;
 }
 
-size_t MYVFS::Read(File* fd, char* buf, size_t buf_len) const{
+size_t MYVFS::Read(File* fd, char* buf, size_t buf_len){
 	return _ds.Read(fd, buf, buf_len);
 }
 

@@ -438,6 +438,6 @@ void run_multithreading_tests() {
 
 int main() {
 	run_tests();
-	//run_multithreading_tests();
+	run_multithreading_tests();
 	return 0;
 }

@@ -3,7 +3,7 @@
 #include <mutex>
 #include <string>
 
-const size_t N_DATA_BLOCKS = 10;
+const size_t N_DATA_BLOCKS = 1000;
 // Общие структуры
 
 struct VFSSettings {

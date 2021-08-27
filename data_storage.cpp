@@ -9,12 +9,15 @@ DataStorage::DataStorage(std::string filename, size_t block_size, bool reinitial
 	: _filename(filename)
 	, _block_size(block_size) {
 	if (reinitialize) {
-		Clear();
+		data_storage_stream = std::move(std::fstream (_filename, std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc));
+	}
+	else {
+		data_storage_stream = std::move(std::fstream(_filename, std::ios::in | std::ios::out | std::ios::binary));
 	}
 }
 
 void DataStorage::Clear() {
-	std::fstream data_storage_stream(_filename, std::ios::out | std::ios::binary | std::ios::trunc);
+	//std::fstream data_storage_stream(_filename, std::ios::out | std::ios::binary | std::ios::trunc);
 }
 
 size_t DataStorage::GetFreeBlock() {
@@ -31,7 +34,7 @@ size_t DataStorage::Append(File* fd, const char* data, size_t data_len) {
 }
 
 size_t DataStorage::Write(File* fd, const char* data, size_t data_len) {
-	std::ofstream data_storage_stream(_filename, ios::in | ios::binary); // открытие файла-хранцилища данных
+	//std::ofstream data_storage_stream(_filename, ios::in | ios::binary); // открытие файла-хранцилища данных
 	
 	// информация о расположении интересующего файла в хранилище
 	auto& data_blocks = fd->inode_obj.data_blocks;
@@ -70,9 +73,9 @@ size_t DataStorage::Write(File* fd, const char* data, size_t data_len) {
 	return write_count;
 }
 
-size_t DataStorage::Read(File* fd, char* buf, size_t buf_len) const{
+size_t DataStorage::Read(File* fd, char* buf, size_t buf_len) {
 
-	std::ifstream data_storage_stream(_filename, ios::binary); // открытие файла-хранцилища данных
+	//std::ifstream data_storage_stream(_filename, ios::binary); // открытие файла-хранцилища данных
 
 	// информация о расположении интересующего файла в хранилище
 	auto& data_blocks = fd->inode_obj.data_blocks;

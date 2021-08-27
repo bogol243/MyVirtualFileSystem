@@ -26,7 +26,7 @@ public:
 	/*
 	* —читать даные из области данных
 	*/
-	size_t Read(File* fd, char* buf, size_t buf_len) const;
+	size_t Read(File* fd, char* buf, size_t buf_len);
 
 	void AddFileToDir(File* file_fd, File* dir_fd, std::string filename);
 	
