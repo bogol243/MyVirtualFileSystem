@@ -9,8 +9,8 @@
 
 class IList {
 	std::string _filename = "ilist.txt";
-	std::ofstream _ilist_ofstream;
-	std::ifstream _ilist_ifstream;
+	std::fstream _ilist_stream;
+	//std::ifstream _ilist_ifstream;
 	size_t _size = 10;
 public:
 	IList();
