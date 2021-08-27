@@ -20,7 +20,7 @@ namespace TestTask{
 		MYVFS fs{ VFSSettings()
 			.SetBlockSize(256)
 			.SetReinitialize(true)};
-
+			
 		// Открыть файл в readonly режиме. Если нет такого файла - вернуть nullptr
 		File* Open(const char* name) {
 			
@@ -290,7 +290,7 @@ void test_multithreading_read_from_different_fd_multiple_files() {
 	std::vector<File*> files_fds;
 	const size_t NUM_FILES = 500;
 
-	for (int i = 0; i < NUM_FILES; ++i) {
+	for (size_t i = 0; i < NUM_FILES; ++i) {
 		std::string data(500, 'A'+ i % 20);
 		files_data.push_back(data);
 		
@@ -370,7 +370,7 @@ void test_multithreading_write_to_different_fd_multiple_files() {
 	std::vector<File*> files_fds;
 	const size_t NUM_FILES = 100;
 
-	for (int i = 0; i < NUM_FILES; ++i) {
+	for (size_t i = 0; i < NUM_FILES; ++i) {
 		std::string data(100, 'A' + i % 20);
 		files_data.push_back(data);
 
