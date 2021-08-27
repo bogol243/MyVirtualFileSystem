@@ -12,8 +12,6 @@ class MYVFS {
 	IList _ilist;
 	DataStorage _ds;
 	File* root_fd;
-	std::mutex global_mutex;
-	std::mutex write_mutex;
 public:
 	MYVFS();
 

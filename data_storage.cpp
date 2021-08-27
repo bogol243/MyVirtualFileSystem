@@ -31,8 +31,6 @@ size_t DataStorage::Append(File* fd, const char* data, size_t data_len) {
 }
 
 size_t DataStorage::Write(File* fd, const char* data, size_t data_len) {
-	std::lock_guard<std::mutex> write_fd_lock(fd->file_mutex);
-
 	std::ofstream data_storage_stream(_filename, ios::in | ios::binary); // открытие файла-хранцилища данных
 	
 	// информация о расположении интересующего файла в хранилище

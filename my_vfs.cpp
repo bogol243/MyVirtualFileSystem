@@ -23,7 +23,6 @@ MYVFS::~MYVFS() {
 }
 
 size_t MYVFS::Write(File* fd, const char* data, size_t data_len) {
-	std::lock_guard<std::mutex> write_lock(write_mutex);
 	size_t bytes_written = _ds.Write(fd, data, data_len);
 	
 	_ilist.WriteINode(fd->inode_id, fd->inode_obj); // обновление информации в inode
@@ -32,7 +31,6 @@ size_t MYVFS::Write(File* fd, const char* data, size_t data_len) {
 }
 
 size_t MYVFS::Read(File* fd, char* buf, size_t buf_len) const{
-	std::lock_guard<std::mutex> read_fd_lock(fd->file_mutex);
 	return _ds.Read(fd, buf, buf_len);
 }
 
@@ -127,12 +125,9 @@ File* MYVFS::TranslateNameToFd(std::string name) {
 	std::vector<std::string> dirs = SplitPath(name);
 
 	File* file_fd = root_fd;
-	{
-		std::lock_guard<std::mutex> global_lock(global_mutex);
-		for (const auto& name_part : dirs) {
-			file_fd = GetFileByNameInDir(file_fd, name_part.c_str());
-			if (!file_fd) return nullptr;
-		}
+	for (const auto& name_part : dirs) {
+		file_fd = GetFileByNameInDir(file_fd, name_part.c_str());
+		if (!file_fd) return nullptr;
 	}
 	
 
@@ -140,11 +135,7 @@ File* MYVFS::TranslateNameToFd(std::string name) {
 }
 
 
-File* MYVFS::MkFile(std::string name) {
-
-	// метод вызывает методы -- модифицирующие как ilist, так и data storage
-	std::lock_guard<std::mutex> make_file_guard(global_mutex);
-	
+File* MYVFS::MkFile(std::string name) {	
 	auto path = SplitPath(name);
 	std::string filename = path.back();
 	path.pop_back();

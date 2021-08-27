@@ -58,7 +58,6 @@ struct File {
 	size_t inode_id = 0;
 	size_t gpos = 0;		//get pos
 	size_t ppos = 0;		//put pos
-	std::mutex file_mutex;
 	OpenMode openmode = OpenMode::CLOSED;
 	INode inode_obj;
 };
