@@ -16,6 +16,7 @@ namespace TestTask{
 	// структура File* -- файловый дескриптор, объявлена в файле common_structures.h
 
 	struct VFS{
+		std::mutex fs_mutex;
 
 		MYVFS fs{ VFSSettings()
 			.SetBlockSize(256)
@@ -23,7 +24,8 @@ namespace TestTask{
 			
 		// Открыть файл в readonly режиме. Если нет такого файла - вернуть nullptr
 		File* Open(const char* name) {
-			
+			std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
+
 			std::string name_str(name);
 			if (name_str[0] != '/') name_str = "/" + name_str;
 
@@ -39,6 +41,8 @@ namespace TestTask{
 
 		// Открыть или создать файл в writeonly режиме. Если нужно, то создать все нужные поддиректории, упомянутые в пути
 		File* Create(const char* name) {
+			std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
+
 			std::string name_str(name);
 			if (name_str[0] != '/') name_str = "/" + name_str;
 			
@@ -50,6 +54,8 @@ namespace TestTask{
 
 		// Прочитать данные из файла. Возвращаемое значение - сколько реально байт удалось прочитать
 		size_t Read(File* f, char* buff, size_t len) {
+			std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
+
 			if (!f) return 0;
 
 			if (f->openmode != OpenMode::WRONLY && f->openmode != OpenMode::CLOSED) {
@@ -62,6 +68,8 @@ namespace TestTask{
 		
 		// Записать данные в файл. Возвращаемое значение - сколько реально байт удалось записать
 		size_t Write(File* f, const char* buff, size_t len) {
+			std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
+
 			if (!f) return 0;
 
 			if (f->openmode != OpenMode::RDONLY && f->openmode != OpenMode::CLOSED) {
@@ -74,6 +82,8 @@ namespace TestTask{
 		
 		// Закрыть файл	
 		void Close(File* f) {
+			std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
+
 			if(f) f->openmode = OpenMode::CLOSED;
 		}
 	};
