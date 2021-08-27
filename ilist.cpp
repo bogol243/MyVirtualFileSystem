@@ -7,6 +7,8 @@ using namespace std;
 
 	IList::IList(string filename, size_t size, bool reinitialize)
 		: _filename(filename)
+		//, _ilist_ofstream(_filename,ios::in | ios::binary)
+		//, _ilist_ifstream(_filename, ios::binary)
 		, _size(size)
 	{
 		if (reinitialize) {
@@ -22,7 +24,7 @@ using namespace std;
 	/*
 	* Получить файл из области данных по идентификатору его inode
 	*/
-	File* IList::GetFile(size_t inode_id) const{
+	File* IList::GetFile(size_t inode_id){
 		File* fd = new File;
 
 		// прочитать нужный INode
@@ -39,7 +41,7 @@ using namespace std;
 
 	/* Прочитать содержимое inode с идентификатором inode_id в объект INode
 	*/
-	optional<INode> IList::ReadINode(size_t inode_id) const{
+	optional<INode> IList::ReadINode(size_t inode_id){
 		// открыть файл
 		ifstream _ilist_stream(_filename, ios::binary);
 
@@ -73,7 +75,7 @@ using namespace std;
 	}
 
 	void IList::Clear() {
-		fstream ilist_stream(_filename, ios::out | ios::binary | ios::trunc);
+		fstream _ilist_stream(_filename, ios::out | ios::binary | ios::trunc);
 	}
 
 	/*
