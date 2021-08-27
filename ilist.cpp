@@ -7,8 +7,8 @@ using namespace std;
 
 	IList::IList(string filename, size_t size, bool reinitialize)
 		: _filename(filename)
-		//, _ilist_ofstream(_filename,ios::in | ios::binary)
-		//, _ilist_ifstream(_filename, ios::binary)
+		, _ilist_ofstream(_filename,ios::in | ios::binary)
+		, _ilist_ifstream(_filename, ios::binary)
 		, _size(size)
 	{
 		if (reinitialize) {
@@ -43,34 +43,34 @@ using namespace std;
 	*/
 	optional<INode> IList::ReadINode(size_t inode_id){
 		// открыть файл
-		ifstream _ilist_stream(_filename, ios::binary);
+		//ifstream _ilist_stream(_filename, ios::binary);
 
 		if (inode_id > _size) { // если inode_id больше чем размер ilist
 			return nullopt;
 		}
 
 		// сдвигаем указатель на нужный inode
-		_ilist_stream.seekg(sizeof(INode) * inode_id);
+		_ilist_ifstream.seekg(sizeof(INode) * inode_id);
 
 		// читаем в объект inode
 		INode inode_obj;
-		_ilist_stream.read(reinterpret_cast<char*>(&inode_obj), sizeof(INode));
+		_ilist_ifstream.read(reinterpret_cast<char*>(&inode_obj), sizeof(INode));
 		return inode_obj;
 	}
 
 	/* Записать новое значение inode для заданного inode_id
 	*/
 	bool IList::WriteINode(size_t inode_id, INode inode_obj) {
-		ofstream _ilist_stream(_filename, ios::in | ios::out | ios::binary);
+		//ofstream _ilist_stream(_filename, ios::in | ios::out | ios::binary);
 
 		if (inode_id > _size) { // если inode_id больше чем размер ilist
 			return false;
 		}
 		// сдвигаем указатель на нужный inode
-		_ilist_stream.seekp(sizeof(INode) * inode_id);
+		_ilist_ofstream.seekp(sizeof(INode) * inode_id);
 		// пишем объект inode в файл
-		_ilist_stream.write(reinterpret_cast<char*>(&inode_obj), sizeof(INode));
-		_ilist_stream.flush();
+		_ilist_ofstream.write(reinterpret_cast<char*>(&inode_obj), sizeof(INode));
+		_ilist_ofstream.flush();
 		return true;
 	}
 
