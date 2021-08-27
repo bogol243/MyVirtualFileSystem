@@ -3,14 +3,14 @@
 #include <mutex>
 #include <string>
 
-const size_t N_DATA_BLOCKS = 100;
+const size_t N_DATA_BLOCKS = 10;
 // Общие структуры
 
 struct VFSSettings {
 	size_t block_size = 256;
 	std::string ilist_filename = "ilist.txt";
 	std::string datastorage_filename = "datastorage.txt";
-	size_t ilist_capacity = 2000;
+	size_t ilist_capacity = 10;
 	bool reinitialize = false;
 	
 	VFSSettings& SetBlockSize(size_t block_size) {

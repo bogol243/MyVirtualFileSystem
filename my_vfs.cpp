@@ -37,6 +37,7 @@ size_t MYVFS::Read(File* fd, char* buf, size_t buf_len) const{
 File* MYVFS::CreateNewFile(size_t FILETYPE) {
 	File* new_file = new File;
 	auto inode_id = _ilist.GetFreeINode();
+	//TODO IF inode_id == 0 everything is bad, we dont have free inodes
 	auto inode = _ilist.ReadINode(inode_id);
 
 	if (!inode) return nullptr;
