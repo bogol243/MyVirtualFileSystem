@@ -34,8 +34,6 @@ size_t DataStorage::Append(File* fd, const char* data, size_t data_len) {
 }
 
 size_t DataStorage::Write(File* fd, const char* data, size_t data_len) {
-	//std::ofstream data_storage_stream(_filename, ios::in | ios::binary); // открытие файла-хранцилища данных
-	
 	// информация о расположении интересующего файла в хранилище
 	auto& data_blocks = fd->inode_obj.data_blocks;
 	size_t& blocks_count = fd->inode_obj.blocks_count;
@@ -73,9 +71,6 @@ size_t DataStorage::Write(File* fd, const char* data, size_t data_len) {
 }
 
 size_t DataStorage::Read(File* fd, char* buf, size_t buf_len) {
-
-	//std::ifstream data_storage_stream(_filename, ios::binary); // открытие файла-хранцилища данных
-
 	// информация о расположении интересующего файла в хранилище
 	auto& data_blocks = fd->inode_obj.data_blocks;
 
