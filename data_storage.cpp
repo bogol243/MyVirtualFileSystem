@@ -59,7 +59,6 @@ size_t DataStorage::Write(File* fd, const char* data, size_t data_len) {
 			
 			data_storage_stream.seekp(current_block * _block_size);	// смещаемся на (номер блока)*(размер блока)
 		}
-
 		data_storage_stream.put(data[write_count++]);	// пишем данные по одному байту
 		
 		data_storage_stream.flush();					// синхронизация с диском для удобства отладки

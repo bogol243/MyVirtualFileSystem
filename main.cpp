@@ -158,7 +158,8 @@ void test_multithreading_read_from_different_fd_single_file() {
 	vfs.Close(fd);
 	delete fd;
 
-	fd = vfs.Open("file1");
+	//
+	//fd = vfs.Open("file1");
 
 	auto test_func = 
 		[&vfs,data]() {
@@ -169,11 +170,12 @@ void test_multithreading_read_from_different_fd_single_file() {
 	};
 	
 	const size_t N = 10000;
-	std::vector<std::future<void>> futures;
-	for (size_t i = 0; i < N; ++i) {
-		futures.push_back(std::async(test_func));
+	{
+		std::vector<std::future<void>> futures;
+		for (size_t i = 0; i < N; ++i) {
+			futures.push_back(std::async(test_func));
+		}
 	}
-
 }
 
 // считывание частей одного файла через один файловый дескриптор из нескольких потоков
@@ -419,7 +421,7 @@ void run_tests() {
 
 void run_multithreading_tests() {
 	test_multithreading_read_from_different_fd_single_file();
-	
+	//
 	test_multithreading_read_from_same_fd_single_file();
 
 	test_multithreading_read_from_different_fd_multiple_files();
@@ -430,7 +432,7 @@ void run_multithreading_tests() {
 
 	test_multithreading_write_to_same_fd();
 
-	//test_multithreading_read_write();
+	test_multithreading_read_write();
 
 	std::cout << "Multithreading tests OK" << std::endl;
 }
@@ -439,5 +441,8 @@ void run_multithreading_tests() {
 int main() {
 	run_tests();
 	run_multithreading_tests();
+
+	//test_multithreading_read_write();
+
 	return 0;
 }
