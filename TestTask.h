@@ -37,4 +37,6 @@ namespace TestTask {
 		void Close(File* f);
 	};
 
+
+	std::string NameToProperFormat(std::string name_str);
 }

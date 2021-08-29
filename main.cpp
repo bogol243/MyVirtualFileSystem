@@ -66,7 +66,7 @@ void test_open_root() {
 	
 	assert(fd != nullptr);				// рут есть
 	assert(fd->inode_id = 2);			// имеет inode_id = 2
-	assert(fd->inode_obj.FILETYPE = 2); // рут это директори€
+	assert(fd->inode_obj.filetype == Filetype::DIRECTORY); // рут это директори€
 }
 
 // ќткрытие несуществующего файла
@@ -158,18 +158,17 @@ void test_multithreading_read_from_different_fd_single_file() {
 	vfs.Close(fd);
 	delete fd;
 
-	//
-	//fd = vfs.Open("file1");
-
 	auto test_func = 
 		[&vfs,data]() {
 			auto fd = vfs.Open("file1");
 			char buf[501];
 			vfs.Read(fd, buf, 501);
+			vfs.Close(fd);
+			delete fd;
 			assert(std::strcmp(buf, data.c_str()) == 0);
 	};
 	
-	const size_t N = 10000;
+	const size_t N = 1000;
 	{
 		std::vector<std::future<void>> futures;
 		for (size_t i = 0; i < N; ++i) {
@@ -362,12 +361,18 @@ void test_multithreading_write_to_same_fd() {
 	assert(fd->inode_obj.byte_size == N * 20 && total_bytes_written == N * 20);
 }
 
-// TODO
+// Ќовый тест
+// ----------
 // ёнит тест с многопоточным доступом к VFS.
 // ¬ несколько потоков 1000 раз пишутс€ и читаютс€ файлы, с проверкой что содержимое правильное.
 //
+// ћежду операци€ми открыти€, записи и чтени€, управление может перехватывать другой поток,
+// который также будет выполн€ть эти операции дл€ своего файла. Ќеобходимо, чтобы система продолжала
+// исправно функционировать в таком режиме работы, т.е. целостность данных не была нарушена.
+// 
 // ожидаемое поведение: 
-void test_multithreading_read_write() {
+//	дл€ каждого файла, считанные данные соответствуют записанным ранее данным.
+void test_multithreading_write_read() {
 	TestTask::IVFS vfs;
 	
 	std::atomic<size_t> file_number = 0;
@@ -380,14 +385,14 @@ void test_multithreading_read_write() {
 
 		// —оздание и запись
 		auto fd = vfs.Create(filename.c_str());
-		vfs.Write(fd, file_data.c_str(), 201);
+		vfs.Write(fd, file_data.c_str(), file_data.size()+1);
 		vfs.Close(fd);
 		delete fd;
 
 		// „тение
-		char buf[201];
+		char buf[250];
 		fd = vfs.Open(filename.c_str());
-		vfs.Read(fd, buf, 201);
+		vfs.Read(fd, buf, 250);
 
 		// ѕроверка данных
 		fail_count += (strcmp(buf, file_data.c_str()) != 0);
@@ -421,7 +426,7 @@ void run_tests() {
 
 void run_multithreading_tests() {
 	test_multithreading_read_from_different_fd_single_file();
-	//
+
 	test_multithreading_read_from_same_fd_single_file();
 
 	test_multithreading_read_from_different_fd_multiple_files();
@@ -432,7 +437,8 @@ void run_multithreading_tests() {
 
 	test_multithreading_write_to_same_fd();
 
-	test_multithreading_read_write();
+	// Ќовый тест
+	test_multithreading_write_read();
 
 	std::cout << "Multithreading tests OK" << std::endl;
 }
@@ -441,8 +447,6 @@ void run_multithreading_tests() {
 int main() {
 	run_tests();
 	run_multithreading_tests();
-
-	//test_multithreading_read_write();
 
 	return 0;
 }
