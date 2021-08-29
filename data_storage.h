@@ -4,12 +4,11 @@
 #include "fd_tools.h"
 
 class DataStorage {
-	using ios = std::ios;
 
-	std::string _filename = "datastorage.txt";
-	std::fstream data_storage_stream;
-	size_t _block_size =  1024;
-	size_t _end_block = 1;
+	std::string filename_ = "datastorage.txt";
+	std::fstream data_storage_stream_;
+	size_t block_size_ =  1024;
+	size_t end_block_ = 1;
 
 public:
 
@@ -20,11 +19,6 @@ public:
 	* size_t block_size		-- размер блока данных (в байтах)
 	*/
 	DataStorage(std::string filename, size_t block_size, bool reinitialize = true);
-
-	/*
-	* ќчистить файлы на диске перед инициализацией
-	*/
-	void Clear();
 
 	/*
 	* ѕолучить id следующего свободного блока в области данных
@@ -41,6 +35,11 @@ public:
 	*/
 	size_t Write(File* fd, const char* data, size_t data_len);
 
+	/*
+	* ѕрочитать данные из файла, чтение будет производитьс€ с текущего положени€ указател€ чтени€ (fd->gpos)
+	*/
 	size_t Read(File* fd, char* buf, size_t buf_len);
+
+	size_t ComputeBlockNumber(File* file);
 };
 

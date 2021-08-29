@@ -66,7 +66,7 @@ void test_open_root() {
 	
 	assert(fd != nullptr);				// рут есть
 	assert(fd->inode_id = 2);			// имеет inode_id = 2
-	assert(fd->inode_obj.FILETYPE = 2); // рут это директория
+	assert(fd->inode_obj.filetype == Filetype::DIRECTORY); // рут это директория
 }
 
 // Открытие несуществующего файла

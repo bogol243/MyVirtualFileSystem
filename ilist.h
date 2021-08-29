@@ -8,10 +8,9 @@
 
 
 class IList {
-	std::string _filename = "ilist.txt";
-	std::fstream _ilist_stream;
-	//std::ifstream _ilist_ifstream;
-	size_t _size = 10;
+	std::string filename_ = "ilist.txt";
+	std::fstream ilist_stream_;
+	size_t size_ = 10;
 public:
 	IList();
 
@@ -38,13 +37,11 @@ public:
 	*/
 	bool WriteINode(size_t inode_id, INode inode_obj);
 
-	void Clear();
-
 	/*
-	* Возвращает INode* на свободную inode.
-	* Если такой нет, возвращает nullptr;
+	* Возвращает id свобойной inode.
+	* Если такой нет, возвращает 0
 	*/
-	size_t/*std::pair<INode*, size_t>*/ GetFreeINode();
+	size_t GetFreeINode();
 
 	friend std::ostream& operator<<(std::ostream& out, IList& ilist);
 };

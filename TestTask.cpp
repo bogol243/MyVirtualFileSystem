@@ -11,7 +11,7 @@ namespace TestTask {
 
 		auto file = fs.TranslateNameToFd(name_str);
 		if (file) {
-			file->openmode = OpenMode::RDONLY;
+			file->SetOpenMode(OpenMode::RDONLY);
 		}
 		return file;
 	}
@@ -24,7 +24,7 @@ namespace TestTask {
 
 		File* file_fd = fs.TranslateNameToFd(name_str);
 		file_fd = file_fd ? file_fd : fs.MkFile(name_str);
-		file_fd->openmode = OpenMode::WRONLY;
+		file_fd->SetOpenMode(OpenMode::WRONLY);
 		return file_fd;
 	}
 
@@ -32,14 +32,10 @@ namespace TestTask {
 	size_t IVFS::Read(File* f, char* buff, size_t len) {
 		std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
 
-		if (!f) return 0;
-
-		if (f->openmode != OpenMode::WRONLY && f->openmode != OpenMode::CLOSED) {
+		if (f && f->openmode != OpenMode::WRONLY && f->openmode != OpenMode::CLOSED) {
 			return fs.Read(f, buff, len);
 		}
-		else {
-			return 0;
-		}
+		return 0;
 	}
 
 	// Записать данные в файл. Возвращаемое значение - сколько реально байт удалось записать
@@ -57,7 +53,7 @@ namespace TestTask {
 	void IVFS::Close(File* f) {
 		std::lock_guard<std::mutex> global_fs_lock(fs_mutex);
 
-		if (f) f->openmode = OpenMode::CLOSED;
+		if (f) f->SetOpenMode(OpenMode::CLOSED);
 	}
 
 	std::string NameToProperFormat(std::string name_str) {

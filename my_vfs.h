@@ -9,13 +9,13 @@
 #include <iostream>
 
 class MYVFS {
-	IList _ilist;
-	DataStorage _ds;
-	File* root_fd;
+	IList ilist_;
+	DataStorage ds_;
+	File* root_fd_;
 public:
 	MYVFS();
 
-	MYVFS(VFSSettings settings);
+	MYVFS(const VFSSettings& settings);
 	
 	~MYVFS();
 	/*
@@ -30,13 +30,13 @@ public:
 
 	void AddFileToDir(File* file_fd, File* dir_fd, std::string filename);
 	
-	std::optional<DirRecord> FindRecordInDir(File* dir_fd, const char name[16]);
+	std::optional<DirRecord> FindRecordInDir(File* dir_fd, const char* name);
 
-	File* GetFileByNameInDir(File* dir_fd, const char name[16]);
+	File* GetFileByNameInDir(File* dir_fd, const char* name);
 
-	File* CreateNewFile(size_t FILETYPE=1);
+	File* CreateNewFile(Filetype filetype = Filetype::REGULAR_FILE);
 	
-	File* CreateNewDir(File* parent_dir);
+	File* CreateNewDir();
 
 	std::vector<std::string> SplitPath(const std::string& name);
 
